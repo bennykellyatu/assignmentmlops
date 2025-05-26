@@ -26,17 +26,21 @@ jobs:
           sudo apt install -y python3 python3-pip python3-venv
           python3 --version
       
-      - name: Install dependencies
+      - name: Create virtual environment and install dependencies
         run: |
-          python3 -m pip install --upgrade pip
-          pip3 install -r requirements.txt
+          python3 -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
       
       - name: Clean data
         run: |
+          source venv/bin/activate
           cd ModelCleaning
-          python3 Cleandata.py
+          python Cleandata.py
 
       - name: Train Data
         run: |
-            cd ModelCleaning
-            python3 train_test_dataset.py
+          source venv/bin/activate
+          cd ModelCleaning
+          python train_test_dataset.py
