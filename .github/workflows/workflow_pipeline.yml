@@ -20,6 +20,7 @@ jobs:
   job2:
     name: check python version
     runs-on: ubuntu-latest
+    needs: job1
     steps:
       - name: Setup Python
         uses: actions/setup-python@v4
