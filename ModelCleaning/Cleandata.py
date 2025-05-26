@@ -2,7 +2,7 @@ import os
 import pandas as pd
 
 # Load CSV file
-df = pd.read_csv('data.csv')
+df = pd.read_csv('ice-cream-temp.csv')
 
 # Show original data
 print("Original Data:")
@@ -17,6 +17,9 @@ df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
 # Convert string columns to lowercase
 df = df.map(lambda x: x.lower() if isinstance(x, str) else x)
 
+# Convert values to numeric 
+df = df.map(lambda x: pd.to_numeric(x, errors='coerce') if not pd.isna(x) else x) 
+
 # Drop rows with any missing values
 df.dropna(inplace=True)
 
@@ -29,7 +32,7 @@ workspace = os.getenv('GITHUB_WORKSPACE')
 model_cleaning_dir = os.path.join(workspace, 'ModelCleaning')
 
 # Define the full path for the output file
-output_path = os.path.join(model_cleaning_dir, 'cleaned_data.csv')
+output_path = os.path.join(model_cleaning_dir, 'cleaned_icecreamdata.csv')
 
 # Create the directory if it doesn't exist
 os.makedirs(model_cleaning_dir, exist_ok=True)
@@ -42,4 +45,4 @@ print(output_path)
 print("Cleaned Data:")
 print(df.head())
 
-print("\nCleaned data saved to 'cleaned_data.csv'")
+print("\nCleaned data saved to 'cleaned_icecream_data.csv'")
