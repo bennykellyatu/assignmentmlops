@@ -34,3 +34,8 @@ jobs:
         run: |
           cd ModelCleaning
           python Cleandata.py
+
+      - name: Train Data
+        run: |
+            cd ModelCleaning
+            python train_test_dataset.py
