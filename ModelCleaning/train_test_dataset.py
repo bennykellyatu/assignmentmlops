@@ -10,7 +10,7 @@ workspace = os.getenv('GITHUB_WORKSPACE')
 model_cleaning_dir = os.path.join(workspace, 'ModelCleaning')
 
 # Define the full path to the cleaned data CSV file
-csv_file_path = os.path.join(model_cleaning_dir, 'cleaned_icecream_data.csv')
+csv_file_path = os.path.join(model_cleaning_dir, 'cleaned_icecreamdata.csv')
 
 # Check if the file exists (for debugging)
 if os.path.exists(csv_file_path):

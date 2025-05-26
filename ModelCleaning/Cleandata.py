@@ -45,4 +45,4 @@ print(output_path)
 print("Cleaned Data:")
 print(df.head())
 
-print("\nCleaned data saved to 'cleaned_icecream_data.csv'")
+print("\nCleaned data saved to 'cleaned_icecreamdata.csv'")
