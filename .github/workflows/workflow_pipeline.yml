@@ -1,7 +1,13 @@
 name: MLOPS Assignment Workflow
 
 on:
-  push
+  push:
+    branches:
+      - main
+      - development
+      - feature/workflow
+      - feature/workflow-2
+  workflow_dispatch:
 
 jobs:
   job1:
@@ -26,3 +32,18 @@ jobs:
         run: |
           python --version
           python -c "import sys; print(f'Python {sys.version}')"
+
+  job3:
+    name: checkout code
+    runs-on: ubuntu-latest
+    needs: job2
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: clean data
+        run: |
+          python ModelCleaning/Cleandata.py
