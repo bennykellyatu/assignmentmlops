@@ -54,7 +54,7 @@ if __name__ == "__main__":
     prediction_ok = test_prediction()
     
     if health_ok and home_ok and prediction_ok:
-        print("\n✅ All API tests passed!")
+        print("\n All API tests passed!")
     else:
-        print("\n❌ Some API tests failed!")
+        print("\n Some API tests failed!")
         exit(1) 

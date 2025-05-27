@@ -70,19 +70,42 @@ jobs:
           sudo docker push ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest
           sudo docker push ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:${{ github.sha }}
 
-      - name: Deploy to Docker Swarm on GCP
+      - name: Deploy to Docker Swarm via SSH
         run: |
-          gcloud compute ssh ${{ secrets.SWARM_MANAGER_INSTANCE }} \
+          # Create SSH key file
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/ssh-key
+          chmod 600 /tmp/ssh-key
+          
+          # Get the external IP of the swarm manager
+          SWARM_IP=$(gcloud compute instances describe ${{ secrets.SWARM_MANAGER_INSTANCE }} \
             --zone=${{ secrets.GOOGLE_ZONE }} \
-            --command="
-              echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-              docker pull ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest
+            --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+          
+          # Deploy via SSH
+          ssh -i /tmp/ssh-key -o StrictHostKeyChecking=no ${{ secrets.GCP_USERNAME }}@$SWARM_IP << 'EOF'
+            # Login to Docker Hub
+            echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+            
+            # Pull latest image
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest
+            
+            # Deploy or update service
+            if docker service ls | grep -q ice-cream-api; then
+              echo "Updating existing service..."
+              docker service update --image ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest ice-cream-api
+            else
+              echo "Creating new service..."
               docker service create \
                 --name ice-cream-api \
                 --replicas 3 \
                 --publish 80:5000 \
-                ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest || \
-              docker service update \
-                --image ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest \
-                ice-cream-api
-            "
+                ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest
+            fi
+            
+            # Show service status
+            docker service ls
+            docker service ps ice-cream-api
+          EOF
+          
+          # Clean up SSH key
+          rm /tmp/ssh-key
