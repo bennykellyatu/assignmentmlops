@@ -8,7 +8,7 @@ workspace = os.getenv('GITHUB_WORKSPACE')
 
 # Define the directory where your Python script is located (ModelCleaning)
 model_cleaning_dir = os.path.join(workspace, 'ModelCleaning')
-
+ 
 # Define the full path to the cleaned data CSV file
 csv_file_path = os.path.join(model_cleaning_dir, 'cleaned_icecreamdata.csv')
 
