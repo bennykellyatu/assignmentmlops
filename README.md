@@ -16,4 +16,5 @@ sudo apt install -y xfce4 xfce4-goodies
 
 Enable Artifact Registry API in Google Account
 Change the key access
+Update permissions again 
 
