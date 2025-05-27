@@ -76,13 +76,8 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/ssh-key
           chmod 600 /tmp/ssh-key
           
-          # Get the external IP of the swarm manager
-          SWARM_IP=$(gcloud compute instances describe ${{ secrets.SWARM_MANAGER_INSTANCE }} \
-            --zone=${{ secrets.GOOGLE_ZONE }} \
-            --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
-          
-          # Deploy via SSH
-          ssh -i /tmp/ssh-key -o StrictHostKeyChecking=no ${{ secrets.GCP_USERNAME }}@$SWARM_IP << 'EOF'
+          # Use static IP instead of gcloud describe
+          ssh -i /tmp/ssh-key -o StrictHostKeyChecking=no ${{ secrets.GCP_USERNAME }}@${{ secrets.SWARM_MANAGER_IP }} << 'EOF'
             # Login to Docker Hub
             echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
             
