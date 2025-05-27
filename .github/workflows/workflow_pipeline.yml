@@ -49,55 +49,40 @@ jobs:
         run: |
           curl -fsSL https://get.docker.com -o get-docker.sh
           sudo sh get-docker.sh
-          
           sudo usermod -aG docker $USER
-          
           sudo systemctl start docker
           sudo systemctl enable docker
-          
           newgrp docker
-          
           docker --version
 
       - name: Build & Tag Docker Image
         run: |
           sudo docker build -t ice-cream-api:latest .
-          
-          # Tag for Google Container Registry
-          sudo docker tag ice-cream-api:latest us-docker.pkg.dev/${{ secrets.GOOGLE_PROJECT }}/ice-cream-api:latest
-          sudo docker tag ice-cream-api:latest us-docker.pkg.dev/${{ secrets.GOOGLE_PROJECT }}/ice-cream-api:${{ github.sha }}
+          sudo docker tag ice-cream-api:latest ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest
+          sudo docker tag ice-cream-api:latest ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:${{ github.sha }}
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GOOGLE_APP_CREDS }}
-
-      - name: Configure Docker for GCR
+      - name: Login to Docker Hub
         run: |
-          gcloud auth configure-docker
+          echo ${{ secrets.DOCKERHUB_TOKEN }} | sudo docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
 
-      - name: Push Docker Image to GCR
+      - name: Push Docker Image to Docker Hub
         run: |
-          sudo docker push us-docker.pkg.dev/${{ secrets.GOOGLE_PROJECT }}/ice-cream-api:latest
-          sudo docker push us-docker.pkg.dev/${{ secrets.GOOGLE_PROJECT }}/ice-cream-api:${{ github.sha }}
+          sudo docker push ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest
+          sudo docker push ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:${{ github.sha }}
 
       - name: Deploy to Docker Swarm on GCP
         run: |
-          # Connect to your GCP Docker Swarm manager node
           gcloud compute ssh ${{ secrets.SWARM_MANAGER_INSTANCE }} \
             --zone=${{ secrets.GOOGLE_ZONE }} \
             --command="
-              # Pull the latest image
-              docker pull us-docker.pkg.dev/${{ secrets.GOOGLE_PROJECT }}/ice-cream-api:latest
-              
-              # Deploy/update the service in swarm
+              echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+              docker pull ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest
               docker service create \
                 --name ice-cream-api \
                 --replicas 3 \
                 --publish 80:5000 \
-                --update-config \
-                us-docker.pkg.dev/${{ secrets.GOOGLE_PROJECT }}/ice-cream-api:latest || \
+                ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest || \
               docker service update \
-                --image us-docker.pkg.dev/${{ secrets.GOOGLE_PROJECT }}/ice-cream-api:latest \
+                --image ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest \
                 ice-cream-api
             "
