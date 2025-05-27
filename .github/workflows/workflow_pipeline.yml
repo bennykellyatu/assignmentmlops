@@ -44,3 +44,10 @@ jobs:
           source venv/bin/activate
           cd ModelCleaning
           python train_test_dataset.py
+
+      - name: Deploy Flask API
+        run: |
+          source venv/bin/activate
+          python app.py &
+          sleep 5
+          python test_api.py
