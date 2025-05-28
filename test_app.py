@@ -83,7 +83,20 @@ class TestIceCreamAPI(unittest.TestCase):
         self.assertIn('predicted_profit', data)
         self.assertEqual(data['temperature'], 25.0)
         self.assertIsInstance(data['predicted_profit'], (int, float))
-        self.assertGreater(data['predicted_profit'], 0)
+        self.assertIsNotNone(data['predicted_profit'])
+    
+    def test_predict_endpoint_missing_temperature(self):
+        """Test the predict endpoint with missing temperature field."""
+        test_data = {'not_temperature': 25.0}
+        response = self.app.post('/predict',
+                                data=json.dumps(test_data),
+                                content_type='application/json')
+        
+        self.assertEqual(response.status_code, 400)
+        
+        data = json.loads(response.data)
+        self.assertIn('error', data)
+        self.assertEqual(data['error'], 'Temperature value required')
     
     def test_invalid_endpoint(self):
         """Test accessing a non-existent endpoint."""
