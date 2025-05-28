@@ -331,7 +331,8 @@ jobs:
                 --name ice-cream-api \
                 --replicas 3 \
                 --publish 80:5000 \
-                --update-config \
+                --restart-condition on-failure \
+                --restart-max-attempts 3 \
                 ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest
             fi
             
