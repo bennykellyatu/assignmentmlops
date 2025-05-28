@@ -72,6 +72,25 @@ jobs:
           echo "status=success" >> $GITHUB_OUTPUT
           echo "data-path=ModelCleaning/cleaned_icecreamdata.csv" >> $GITHUB_OUTPUT
           echo "Data cleaning completed"
+      
+      - name: Verify Cleaned Data
+        run: |
+          if [ -f "ModelCleaning/cleaned_icecreamdata.csv" ]; then
+            echo "Cleaned data file created successfully!"
+            echo "File size: $(wc -l ModelCleaning/cleaned_icecreamdata.csv)"
+            head -5 ModelCleaning/cleaned_icecreamdata.csv
+          else
+            echo "Cleaned data file not found!"
+            ls -la ModelCleaning/
+            exit 1
+          fi
+      
+      - name: Upload Cleaned Data
+        uses: actions/upload-artifact@v4
+        with:
+          name: cleaned-data
+          path: ModelCleaning/cleaned_icecreamdata.csv
+          retention-days: 1
 
   # Job 3: Model Training (depends on data processing)
   model-training:
@@ -87,6 +106,24 @@ jobs:
         with:
           repository: ${{ github.repository }}
           token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Download Cleaned Data
+        uses: actions/download-artifact@v4
+        with:
+          name: cleaned-data
+          path: ModelCleaning/
+      
+      - name: Verify Downloaded Data
+        run: |
+          echo "Contents of ModelCleaning directory:"
+          ls -la ModelCleaning/
+          if [ -f "ModelCleaning/cleaned_icecreamdata.csv" ]; then
+            echo "Cleaned data file found!"
+            echo "File size: $(wc -l ModelCleaning/cleaned_icecreamdata.csv)"
+          else
+            echo "Cleaned data file not found!"
+            exit 1
+          fi
       
       - name: Restore Virtual Environment
         run: |
@@ -114,6 +151,13 @@ jobs:
             echo "Model file not found"
             exit 1
           fi
+      
+      - name: Upload Trained Model
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-model
+          path: ModelCleaning/TemperatureProfitsModel.pkl
+          retention-days: 1
 
   # Job 4: Containerization (depends on model training)
   containerization:
@@ -129,6 +173,12 @@ jobs:
         with:
           repository: ${{ github.repository }}
           token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Download Trained Model
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: ModelCleaning/
       
       - name: Install Docker
         run: |
@@ -184,6 +234,12 @@ jobs:
         with:
           repository: ${{ github.repository }}
           token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Download Trained Model
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: ModelCleaning/
       
       - name: Rebuild Image if Needed
         run: |

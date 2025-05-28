@@ -3,20 +3,19 @@ from pandas import read_csv
 from joblib import dump
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
- 
-workspace = os.getenv('GITHUB_WORKSPACE')
 
-# Define the directory where your Python script is located (ModelCleaning)
-model_cleaning_dir = os.path.join(workspace, 'ModelCleaning')
-
-# Define the full path to the cleaned data CSV file
-csv_file_path = os.path.join(model_cleaning_dir, 'cleaned_icecreamdata.csv')
+# Define the path to the cleaned data CSV file
+csv_file_path = 'cleaned_icecreamdata.csv'
 
 # Check if the file exists (for debugging)
 if os.path.exists(csv_file_path):
-    print(f"File found: {csv_file_path}")
+    print(f"File found: {os.path.abspath(csv_file_path)}")
 else:
-    print(f"File not found at: {csv_file_path}")
+    print(f"File not found at: {os.path.abspath(csv_file_path)}")
+    # List files in current directory for debugging
+    print("Files in current directory:")
+    for file in os.listdir('.'):
+        print(f"  {file}")
 
 # Read the cleaned data CSV file
 df = read_csv(csv_file_path)
@@ -33,3 +32,6 @@ mind = LinearRegression()
 mind.fit(X_train,  y_train)
 
 dump(mind, "TemperatureProfitsModel.pkl")
+
+print("Model training completed successfully!")
+print(f"Model saved to: {os.path.abspath('TemperatureProfitsModel.pkl')}")

@@ -26,23 +26,10 @@ df.dropna(inplace=True)
 # Drop duplicate rows
 df.drop_duplicates(inplace=True)
 
-workspace = os.getenv('GITHUB_WORKSPACE')
-
-# Define the directory where your Python script is located (ModelCleaning)
-model_cleaning_dir = os.path.join(workspace, 'ModelCleaning')
-
-# Define the full path for the output file
-output_path = os.path.join(model_cleaning_dir, 'cleaned_icecreamdata.csv')
-
-# Create the directory if it doesn't exist
-os.makedirs(model_cleaning_dir, exist_ok=True)
-
-# Save cleaned data
+# Save cleaned data to current directory (ModelCleaning)
+output_path = 'cleaned_icecreamdata.csv'
 df.to_csv(output_path, index=False)
 
-print(output_path)
-# Show original data
+print(f"Cleaned data saved to: {os.path.abspath(output_path)}")
 print("Cleaned Data:")
 print(df.head())
-
-print("\nCleaned data saved to 'cleaned_icecreamdata.csv'")

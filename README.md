@@ -18,3 +18,10 @@ Enable Artifact Registry API in Google Account
 Change the key access
 Update permissions again 
 
+
+
+Tomorrow
+- might need to create a new runner due to memeory; setup instructions from Github 
+- get the swarm access sorted, SSH option probably 
+- make it more of a pipeline view with one step dependent on the last
+- add unit testing to the pipeline
