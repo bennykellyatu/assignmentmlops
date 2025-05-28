@@ -198,12 +198,19 @@ jobs:
         id: build-image
         run: |
           IMAGE_TAG="${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:${{ github.sha }}"
+          echo "Building image with tag: $IMAGE_TAG"
+          
           sudo docker build -t ice-cream-api:latest .
           sudo docker tag ice-cream-api:latest ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest
           sudo docker tag ice-cream-api:latest $IMAGE_TAG
+          
           echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "status=success" >> $GITHUB_OUTPUT
           echo "Docker image built: $IMAGE_TAG"
+          
+          # Verify images were created
+          echo "Available Docker images:"
+          sudo docker images | grep -E "(ice-cream-api|${{ secrets.DOCKERHUB_USERNAME }})"
 
       - name: Test Container Locally
         run: |
@@ -229,6 +236,14 @@ jobs:
     outputs:
       registry-status: ${{ steps.push-image.outputs.status }}
     steps:
+      - name: Debug Job Outputs
+        run: |
+          echo "Containerization job outputs:"
+          echo "  image-tag: '${{ needs.containerization.outputs.image-tag }}'"
+          echo "  container-status: '${{ needs.containerization.outputs.container-status }}'"
+          echo "  GitHub SHA: '${{ github.sha }}'"
+          echo "  DockerHub Username: '${{ secrets.DOCKERHUB_USERNAME }}'"
+      
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -243,10 +258,19 @@ jobs:
       
       - name: Rebuild Image if Needed
         run: |
+          echo "Checking if image exists..."
           if ! sudo docker images | grep -q "${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api"; then
+            echo "Image not found, rebuilding..."
             sudo docker build -t ice-cream-api:latest .
             sudo docker tag ice-cream-api:latest ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest
-            sudo docker tag ice-cream-api:latest ${{ needs.containerization.outputs.image-tag }}
+            
+            # Create SHA tag
+            SHA_TAG="${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:${{ github.sha }}"
+            sudo docker tag ice-cream-api:latest $SHA_TAG
+            echo "Image rebuilt and tagged as latest and $SHA_TAG"
+          else
+            echo "Image already exists"
+            sudo docker images | grep "${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api"
           fi
 
       - name: Login to Docker Hub
@@ -257,8 +281,23 @@ jobs:
       - name: Push Images
         id: push-image
         run: |
+          echo "Checking image tag from containerization job: '${{ needs.containerization.outputs.image-tag }}'"
+          
+          # Always push the latest tag
           sudo docker push ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest
-          sudo docker push ${{ needs.containerization.outputs.image-tag }}
+          
+          # Only push the SHA tag if it exists and is not empty
+          if [ -n "${{ needs.containerization.outputs.image-tag }}" ]; then
+            echo "Pushing SHA-tagged image: ${{ needs.containerization.outputs.image-tag }}"
+            sudo docker push ${{ needs.containerization.outputs.image-tag }}
+          else
+            echo "No SHA-tagged image to push, creating one now..."
+            SHA_TAG="${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:${{ github.sha }}"
+            sudo docker tag ${{ secrets.DOCKERHUB_USERNAME }}/ice-cream-api:latest $SHA_TAG
+            sudo docker push $SHA_TAG
+            echo "Pushed SHA-tagged image: $SHA_TAG"
+          fi
+          
           echo "status=success" >> $GITHUB_OUTPUT
           echo "Images pushed to Docker Hub"
 
