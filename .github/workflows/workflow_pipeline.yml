@@ -3,11 +3,22 @@ name: MLOPS Assignment Pipeline
 on:
   push:
     branches:
+      - main                   
+      - develop                 
+      - staging                 
+      - 'feature/**'           
+      - 'experiment/**'        
+      - 'hotfix/**'            
+  pull_request:
+    branches:
       - main
-      - development
-      - feature/workflow
-      - feature/workflow-2
-  workflow_dispatch:
+      - develop
+      - staging
+  workflow_dispatch:           
+
+env:
+  # Environment variables based on branch
+  DEPLOY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'none' }}
 
 jobs:
   # Job 1: Environment Setup
@@ -353,6 +364,8 @@ jobs:
     name: Deploy to Swarm
     runs-on: self-hosted
     needs: [model-training, containerization, registry-push]
+    # Only deploy for main, staging, and hotfix branches
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || startsWith(github.ref, 'refs/heads/hotfix/')
     outputs:
       deployment-status: ${{ steps.deploy-service.outputs.status }}
     steps:
@@ -403,6 +416,8 @@ jobs:
     name: Verify Deployment
     runs-on: self-hosted
     needs: deployment
+    # Only verify if deployment actually ran
+    if: needs.deployment.result == 'success'
     steps:
       - name: Verify Service Health
         run: |
