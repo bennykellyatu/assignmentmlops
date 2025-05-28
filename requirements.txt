@@ -4,3 +4,5 @@ joblib
 flask
 numpy
 requests
+pytest
+coverage

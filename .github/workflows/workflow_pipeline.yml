@@ -159,11 +159,58 @@ jobs:
           path: ModelCleaning/TemperatureProfitsModel.pkl
           retention-days: 1
 
-  # Job 4: Containerization (depends on model training)
+  # Job 4: Unit Testing (depends on model training)
+  unit-testing:
+    name: Run Unit Tests
+    runs-on: self-hosted
+    needs: model-training
+    outputs:
+      test-status: ${{ steps.run-tests.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Download Trained Model
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: ModelCleaning/
+      
+      - name: Restore Virtual Environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+      
+      - name: Run Unit Tests
+        id: run-tests
+        run: |
+          source venv/bin/activate
+          echo "Running unit tests for the API..."
+          
+          # Make the test runner executable
+          chmod +x run_tests.py
+          
+          # Run the tests using our custom test runner
+          python run_tests.py
+          
+          if [ $? -eq 0 ]; then
+            echo "All unit tests passed!"
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "Unit tests failed!"
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+  # Job 5: Containerization (depends on unit testing)
   containerization:
     name: Build Container
     runs-on: self-hosted
-    needs: model-training
+    needs: [model-training, unit-testing]
     outputs:
       image-tag: ${{ steps.build-image.outputs.image-tag }}
       container-status: ${{ steps.build-image.outputs.status }}
@@ -228,7 +275,7 @@ jobs:
           sudo docker stop test-container
           sudo docker rm test-container
 
-  # Job 5: Registry Push (depends on containerization)
+  # Job 6: Registry Push (depends on containerization)
   registry-push:
     name: Push to Registry
     runs-on: self-hosted
@@ -301,7 +348,7 @@ jobs:
           echo "status=success" >> $GITHUB_OUTPUT
           echo "Images pushed to Docker Hub"
 
-  # Job 6: Deployment (depends on registry push)
+  # Job 7: Deployment (depends on registry push)
   deployment:
     name: Deploy to Swarm
     runs-on: self-hosted
@@ -351,7 +398,7 @@ jobs:
           echo "status=success" >> $GITHUB_OUTPUT
           echo "Deployment completed"
 
-  # Job 7: Post-Deployment Verification (depends on deployment)
+  # Job 8: Post-Deployment Verification (depends on deployment)
   verification:
     name: Verify Deployment
     runs-on: self-hosted
