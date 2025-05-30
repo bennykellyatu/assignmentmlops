@@ -15,7 +15,7 @@ on:
       - develop
       - staging
   workflow_dispatch:           
-
+ 
 env:
   # Environment variables based on branch
   DEPLOY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'none' }}
@@ -41,8 +41,6 @@ jobs:
           sudo apt update
           sudo apt install -y python3 python3-pip python3-venv
           PYTHON_VERSION=$(python3 --version)
-          echo "python-version=$PYTHON_VERSION" >> $GITHUB_OUTPUT
-          echo "status=success" >> $GITHUB_OUTPUT
           echo "Python installed: $PYTHON_VERSION"
       
       - name: Create Virtual Environment
@@ -222,6 +220,8 @@ jobs:
     name: Build Container
     runs-on: self-hosted
     needs: [model-training, unit-testing]
+    # Only run the containerization job for main, staging, develop and hotfix branches
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/develop/' || startsWith(github.ref, 'refs/heads/hotfix/')
     outputs:
       image-tag: ${{ steps.build-image.outputs.image-tag }}
       container-status: ${{ steps.build-image.outputs.status }}
@@ -299,7 +299,6 @@ jobs:
           echo "Containerization job outputs:"
           echo "  image-tag: '${{ needs.containerization.outputs.image-tag }}'"
           echo "  container-status: '${{ needs.containerization.outputs.container-status }}'"
-          echo "  GitHub SHA: '${{ github.sha }}'"
           echo "  DockerHub Username: '${{ secrets.DOCKERHUB_USERNAME }}'"
       
       - name: Checkout code
